@@ -1,0 +1,4 @@
+JSAnimation
+===========
+
+Javascript animation framework
