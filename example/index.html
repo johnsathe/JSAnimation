@@ -2,12 +2,54 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title>JS Animation framework</title>
+    <style type="text/css">
+        #mystage
+        {
+            position:relative;
+            width:500px;
+            height:500px;
+            background-color:rgb(233, 233, 233);
+        }
+    </style>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
     <script src="../src/JSAnimation.js"></script>
     <script src="../src/jsanimation.renderer.default.js"></script>
-</head>
-<body>
+    <script type="text/javascript">
+        var Page = {};
+        Page.OnLoad = function () {
+            var jsanim = new JSAnimation.Animation("mystage"); // Create JSAnimation Animation instance
+            jsanim.PlaceActors(new JSAnimation.Actor("myname", "Text", 10, 10, null, null, null, "Hello world", true, null)); //Add actor text to stage
 
+            var f = 1; //Frame counter
+            jsanim.AddAction(new JSAnimation.Action(f, f + 20, "myname", null, null, null, null, null, null, true, [{ "top": 200,"left":200 }, {}], null, null));
+            
+            f += 20;
+
+            jsanim.TotalFrames = f; //Set total number of frames
+
+            $("#btnPlay").bind("click", function () { jsanim.Play(); });//play the animation
+            $("#btnStop").bind("click", function () { jsanim.Stop(); });//stop the animation
+            $("#btnGtoPlay").bind("click", function () { jsanim.GoToAndPlay(10); });//goto frame 5 and play
+            $("#btnGtoStop").bind("click", function () { jsanim.GoToAndStop(10); });//goto frame 5 and stop
+            $("#btnReset").bind("click", function () { jsanim.Reset(); });//reset the animation
+
+            jsanim.Events.OnAnimationFrameChange = function () { //events
+                $("#frames").val(jsanim.CurrentFrame + " of " + jsanim.TotalFrames);
+            };
+
+        };
+    </script>
+</head>
+<body onload="Page.OnLoad()">
+    <div>
+        <button id="btnPlay">Play</button>
+        <button id="btnStop">Stop</button>
+        <button id="btnGtoPlay">GoTo 5 and play</button>
+        <button id="btnGtoStop">GoTo 5 and Stop</button>
+        <button id="btnReset">Reset</button>
+        <input type="text" id="frames" />
+    </div>
+    <div id="mystage"></div>
 </body>
 </html>

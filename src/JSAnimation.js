@@ -24,6 +24,7 @@
         this.Actors = [];
         this.Actions = [];
         this._currentJSAnimation = [];
+        this.JumpTill=null;
         this._currentSEQAnims = [];
         this.ActorsAddress = {};
         return this;
@@ -35,6 +36,7 @@
         */
         ID: null,
         UseBase64: false,
+        JumpTill:null,
         Base64Imgs: {},
         /**
         * Define wether the animation will replay on finish, defualt 'false'
@@ -139,10 +141,13 @@
                 j = 0;
                 for (j = 0; j < this.Actions.length; j++) {
                     if (this.Actions[j].StartFrame === i) {
+                        this.JumpTill = FrameNumber;
                         this.RunActorAction(this.Actions[j], this);
+                        this.JumpTill = null;
                     }
                 }
             }
+            this.Events.OnAnimationFrameChange();
         },
         /**
         * Add actor in animation
@@ -218,6 +223,7 @@
         * Play the animation
         */
         Play: function () {
+            if (this.State.isPlaying) { return;}
             this.Jump = false;
             this.State.Playing();
             this.Events.OnAnimationPlay(this);
@@ -268,6 +274,7 @@
             this.State.Stoped();
             clearTimeout(this._timer);
             this.CurrentFrame = 0;
+            this.JumpTill = null;
             this.Events.OnAnimationFrameChange(this);
             this.ActorsAddress = {};
             this._currentJSAnimation = [];
@@ -312,7 +319,7 @@
                 CurrentAnimatedObj = this._currentJSAnimation[ox];
                 if (CurrentAnimatedObj.TargetObject !== null) {
                     if (this.CurrentFrame >= CurrentAnimatedObj.StartFrame && this.CurrentFrame < CurrentAnimatedObj.EndFrame) {
-                        CurrentAnimatedObj.TargetObject.animate(CurrentAnimatedObj.EndCSS, CurrentAnimatedObj.Prop, 'none');
+                        CurrentAnimatedObj.TargetObject.animate(CurrentAnimatedObj.EndCSS, CurrentAnimatedObj.Prop);
                     }
                 }
             }
@@ -353,7 +360,7 @@
             }
         },
         RunActorAction: function (Action, AnimObj) {
-            var targetObj, clipObj, dObj, easing, frms, dur, prop, JQAnimC;
+            var targetObj, clipObj, dObj, easing, frms, dur, prop, JQAnimC, diff;
             dObj = AnimObj.ActorsAddress["#" + AnimObj.ID + " #" + Action.TargetID];
             if (dObj === undefined) {
                 dObj = {};
@@ -408,24 +415,28 @@
             if (Action.Animate) {
                 easing = "linear";
                 if ($.isArray(Action.Animate)) {
-                    easing = Action.Animate[1].easing;
+                    easing = Action.Animate[1].easing || "linear";
                     Action.Animate = Action.Animate[0];
                 }
+                 frms = Action.EndFrame - Action.StartFrame;
+                diff = (AnimObj.JumpTill - Action.StartFrame) / frms;
+                dur = frms * AnimObj.Speed;
+                prop = {};
+                prop.duration = dur;
+                prop.easing = easing;
+                JQAnimC = new JSAnimation.JQAnimation.Animation();
+                JQAnimC.TargetObject = targetObj;                
+                JQAnimC.EndCSS = Action.Animate;
+                JQAnimC.Prop = prop;
+                JQAnimC.StartFrame = Action.StartFrame;
+                JQAnimC.EndFrame = Action.EndFrame;
+                AnimObj._currentJSAnimation.push(JQAnimC);
                 if (AnimObj.Jump) {
-                    targetObj.css(Action.Animate);
-                } else {
-                    frms = Action.EndFrame - Action.StartFrame;
-                    dur = frms * AnimObj.Speed;
-                    prop = {};
-                    prop.duration = dur;
-                    prop.easing = easing;
-                    JQAnimC = new JSAnimation.JQAnimation.Animation();
-                    JQAnimC.TargetObject = targetObj;
-                    JQAnimC.EndCSS = Action.Animate;
-                    JQAnimC.Prop = prop;
-                    JQAnimC.StartFrame = Action.StartFrame;
-                    JQAnimC.EndFrame = Action.EndFrame;
-                    AnimObj._currentJSAnimation.push(JQAnimC);
+                    for (prop in Action.Animate) {
+                        var mval = Action.Animate[prop];
+                        targetObj.css(prop, parseInt(mval) * diff);
+                    };
+                } else {                    
                     targetObj.animate(Action.Animate, prop, 'none');
                 }
             }
